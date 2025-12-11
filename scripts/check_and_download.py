@@ -9,8 +9,12 @@ import requests
 import re
 import os
 import json
+import urllib3
 from pathlib import Path
 from datetime import datetime
+
+# Disable SSL warnings (needed for health.mil)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 DATA_DIR = "data"
 RAW_DIR = f"{DATA_DIR}/raw"
@@ -66,7 +70,7 @@ def download_file(url, output_path):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
     try:
-        response = requests.get(url, headers=headers, timeout=60, stream=True)
+        response = requests.get(url, headers=headers, timeout=60, stream=True, verify=False)
         response.raise_for_status()
         
         with open(output_path, 'wb') as f:
@@ -93,7 +97,7 @@ def check_and_download():
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
     
     try:
-        response = requests.get(UFDUR_PAGE_URL, headers=headers, timeout=30)
+        response = requests.get(UFDUR_PAGE_URL, headers=headers, timeout=30, verify=False)
         response.raise_for_status()
         html_content = response.text
         print("  Page fetched successfully")
@@ -109,6 +113,8 @@ def check_and_download():
         return []
     
     print(f"  Found {len(ufdur_files)} UFDUR file(s)")
+    for f in ufdur_files:
+        print(f"    - {f['quarter']}: {f['filename']}")
     
     new_files = []
     for file_info in ufdur_files:
